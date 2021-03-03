@@ -1,12 +1,30 @@
 ## Blaseball Bet Odds Optimizer ##
 import math
 import numpy
+import sys
 
-# Manually enter the winning odds for each game, your number of coins, and your current max bet
-gameOdds = [56,63,62,61,55,63,63,53,60,61] 
-coins = 2147
-currentMaxBet = 300
+# Parameter setup
+gameOdds = [] 
+coins = 96
+currentMaxBet = 60
 EVMode = True
+
+# total arguments
+n = len(sys.argv)
+
+if (n==13):
+    for i in range(1, 11):
+        gameOdds.append(int(sys.argv[i]))
+    coins = int(sys.argv[11])
+    currentMaxBet = int(sys.argv[12])
+else:
+    print("Needs 10 odds, 1 coins, and 1 currentMaxBet = 12 args. Defaulting to input")
+
+    for i in range(1, 11):
+        gameOdds.append(int(input(f"Enter winning odds for game {i}: ")))
+
+    coins = int(input("Enter current coins: "))
+    currentMaxBet = int(input("Enter current max bet: "))
 
 # Pre-Allocating Arrays
 gameOddsEV = ['0'] * len(gameOdds)
