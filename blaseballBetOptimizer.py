@@ -2,6 +2,9 @@
 import math
 import numpy
 import sys
+import sseclient
+import json
+import requests
 
 # Parameter setup
 gameOdds = [] 
@@ -9,19 +12,29 @@ coins = 96
 currentMaxBet = 60
 EVMode = True
 
+# Gather the game odds from the current game state
+def get_data():
+    url = 'https://www.blaseball.com/events/streamData'
+    headers = {'Accept': 'text/event-stream'}
+    response = requests.get(url, stream=True, headers=headers)
+    client = sseclient.SSEClient(response)
+    for event in client.events():
+        return json.loads(event.data)
+
+data = get_data()
+
+for day in data["value"]["games"]["tomorrowSchedule"]:
+    winning_odds = day["awayOdds"] if day["awayOdds"]>day["homeOdds"] else day["homeOdds"]
+    gameOdds.append(round(winning_odds * 100))
+
 # total arguments
 n = len(sys.argv)
 
-if (n==13):
-    for i in range(1, 11):
-        gameOdds.append(int(sys.argv[i]))
-    coins = int(sys.argv[11])
-    currentMaxBet = int(sys.argv[12])
+if (n==2):
+    coins = int(sys.argv[1])
+    currentMaxBet = int(sys.argv[2])
 else:
-    print("Needs 10 odds, 1 coins, and 1 currentMaxBet = 12 args. Defaulting to input")
-
-    for i in range(1, 11):
-        gameOdds.append(int(input(f"Enter winning odds for game {i}: ")))
+    print("No/improper command line arguments detected. Switching to user input")
 
     coins = int(input("Enter current coins: "))
     currentMaxBet = int(input("Enter current max bet: "))
