@@ -7,7 +7,8 @@ import json
 import requests
 
 # Parameter setup
-gameOdds = [] 
+gameOdds = []
+gameOddNumbers = []
 coins = 96
 currentMaxBet = 60
 EVMode = True
@@ -24,13 +25,26 @@ def get_data():
 data = get_data()
 
 for day in data["value"]["games"]["tomorrowSchedule"]:
-    winning_odds = day["awayOdds"] if day["awayOdds"]>day["homeOdds"] else day["homeOdds"]
-    gameOdds.append(round(winning_odds * 100))
+
+    better_odds = 0.3
+    better_team = "Team Name"
+
+    if day["awayOdds"]>day["homeOdds"]:
+        better_odds = day["awayOdds"]
+        better_team = day["awayTeamNickname"]
+    else:
+        better_odds = day["homeOdds"]
+        better_team = day["homeTeamNickname"]
+
+    better_touple = (round(better_odds * 100), better_team)
+
+    gameOddNumbers.append(round(better_odds * 100))
+    gameOdds.append(better_touple)
 
 # total arguments
 n = len(sys.argv)
 
-if (n==2):
+if (n==3):
     coins = int(sys.argv[1])
     currentMaxBet = int(sys.argv[2])
 else:
@@ -47,7 +61,7 @@ totalCoins = coins
 minBet = 0 # Used when EV mode set to False
 
 # Determine game-set bet order, so high games get max bid
-gameOrder = numpy.argsort(gameOdds)
+gameOrder = numpy.argsort(gameOddNumbers)
 gameOrder = gameOrder[::-1]
 gameSorted = sorted(gameOdds)
 
@@ -57,7 +71,7 @@ if EVMode == False:
     logCoEf = (1 - minBet)/(math.log1p(HighRank-50))
     print("Log Co-Efficient: " + str(logCoEf))
     for index in range(0,len(gameOdds)):
-        gameBets[index] = math.floor( currentMaxBet * ((logCoEf*math.log1p(gameOdds[index] - 50)) + minBet))
+        gameBets[index] = math.floor( currentMaxBet * ((logCoEf*math.log1p(gameOdds[index][0] - 50)) + minBet))
         if gameBets[index] > currentMaxBet:
             gameBets[index] = currentMaxBet
     gameBetsSorted = sorted(gameBets, reverse = True)
@@ -67,7 +81,7 @@ if EVMode == True:
     EVmin = 0
     EVrange = EVmax - EVmin
     for index in range(0,len(gameOdds)):
-        gameOddsEV[index] = (2 - (355*10**-6)*(math.pow((100*(gameOdds[index]/100 - 0.5)), 2.045)))*(gameOdds[index]/100) - 1
+        gameOddsEV[index] = (2 - (355*10**-6)*(math.pow((100*(gameOdds[index][0]/100 - 0.5)), 2.045)))*(gameOdds[index][0]/100) - 1
         gameBets[index] = math.floor(currentMaxBet*(gameOddsEV[index]/EVrange))
         if gameBets[index] > currentMaxBet:
             gameBets[index] = currentMaxBet
@@ -83,11 +97,10 @@ for index in range(0, len(gameOdds)):
     #print('Total coins is now: ' + str(totalCoins))
 
 # Output   
-print('\nGame\tOdds\tBet')
-print('|||||||||||||||||||')
+print('\nGame\tOdds\t\t\tBet')
+print('||||||||||||||||||||||||||||||||||||')
 for index in range(0,len(gameOdds)):
     if gameBetsSortedBeg[index] == 'Beg':
         gameBetsSorted[index] = gameBetsSortedBeg[index]
-        print(f"{gameOrder[index] + 1}" +"\t"+ f"{gameOdds[gameOrder[index]]}" + '\t' + f"{gameBetsSorted[index]}")
-    else:
-        print(f"{gameOrder[index] + 1}" +"\t"+ f"{gameOdds[gameOrder[index]]}" + '\t' + f"{gameBetsSorted[index]}")
+
+    print("{:<8}{:<24}{}".format(gameOrder[index] + 1, str(gameOdds[gameOrder[index]]), gameBetsSorted[index]))
